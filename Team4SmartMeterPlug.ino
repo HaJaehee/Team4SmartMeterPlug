@@ -8,14 +8,16 @@ int SSRPin = 13;
 int WCSPin = A0;
 double A0Value=0;
   
-double initSum = 0.0;
-double initAvg = 0.0;
-double rmsArray[50];
+double initSensInputSum = 0.0;
+double initSensInputAvg = 0.0;
+double valueForCorrectionError = 0;
+double rmsArray[200];
 double result;
-int N=50;
-int initN=200;
+int sensLoopN=200;
+int initLoopN=200;
 int counter=0;
-int initCounter=0;
+int initSensInputCounter=0;
+int ssrPower=0;
 
 int buttonPin[16] = {22,23,24,25,26,27,28,29};
 int ledCols[8] = {30,31,32,33,34,35,36,37};
@@ -23,6 +25,7 @@ int ledRows[8] = {14,15,16,17,18,19,20,21};
 LiquidCrystal lcd(12,11,5,4,3,2);
 
 bool SSROn = false;
+bool initiated = false;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -40,7 +43,8 @@ void setup() {
   }
   lcd.begin(16,2);
   lcd.print("SSR is off.");
-  
+  ssrPower=0;
+  initiated = true;
   setInitA0ValueAvg();
   Serial.begin(9600);
 }
@@ -54,19 +58,24 @@ void matrixOff (){
   
 void setInitA0ValueAvg()
 {
-  initSum=0;
-  initAvg=0;
-    for (initCounter=0;initCounter<initN;initCounter++)
+  
+  delay(3000);
+  initSensInputSum=0;
+  initSensInputAvg=0;
+    for (initSensInputCounter=0;initSensInputCounter<initLoopN;initSensInputCounter++)
   {
     A0Value=analogRead(WCSPin);
-    initSum += A0Value;
+    initSensInputSum += A0Value;
   }
-  initAvg = initSum/initN;
+  initSensInputAvg = initSensInputSum/initLoopN;
 }
 // the loop function runs over and over again forever
 void loop() {
 
-  
+  if (Serial.available())
+  {
+      Serial.println(Serial.read());
+  }
 /*
   for( int i = 0 ; i < 8 ; i++)
   {
@@ -162,7 +171,8 @@ void loop() {
     SSROn = true;
     lcd.setCursor(0,0);
     lcd.print("SSR is on. ");
-    Serial.println("======SSR ON======");
+    //Serial.println("======SSR ON======");
+    ssrPower=1;
   }
   
   if(!digitalRead(buttonPin[1]) && SSROn)
@@ -171,30 +181,49 @@ void loop() {
     SSROn = false;
     lcd.setCursor(0,0);
     lcd.print("SSR is off.");
-    Serial.println("======SSR OFF======");
+    //Serial.println("======SSR OFF======");
     setInitA0ValueAvg();
+    ssrPower=0;
+    initiated=true;
   }
   
    
   //digitalWrite(SSRPin, HIGH);   // turn the LED on (HIGH is the voltage level)
 
   
-  if (counter<N){
+  if (counter<sensLoopN){
     A0Value=analogRead(WCSPin);
-    rmsArray[counter] = A0Value- initAvg;
+    rmsArray[counter] = A0Value-initSensInputAvg;
     counter++;
   }
   else {
     counter=0;
     result=0;
-    for(int i = 0; i<N ; i++)
+    for(int i = 0; i<sensLoopN ; i++)
     {
-      result += pow(rmsArray[i],2);
+      result +=  pow(rmsArray[i],2);
     }
-    result /= N;
+    result /= sensLoopN;
     result = sqrt(result);
-    Serial.print("A0 = ");
-    Serial.println(result);
+    result = result/4.44416;
+    result = 220*result;
+    if (initiated)
+    {
+      valueForCorrectionError = result;
+      initiated = false;
+    }
+    else if (!SSROn)
+    {
+      valueForCorrectionError += result;
+      valueForCorrectionError /= 2.0;
+    } 
+    result -=  valueForCorrectionError;
+    if (result <10)
+      result=0;
+    
+    Serial.print(result);
+    Serial.print(",");
+    Serial.println(ssrPower);
   }
   //digitalWrite(SSRPin, LOW);    // turn the LED off by making the voltage LOW
   //Serial.println("======LED OFF======");
