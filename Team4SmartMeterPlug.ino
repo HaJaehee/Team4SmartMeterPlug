@@ -59,7 +59,7 @@ void matrixOff (){
 void setInitA0ValueAvg()
 {
   
-  delay(3000);
+  delay(2000);
   initSensInputSum=0;
   initSensInputAvg=0;
     for (initSensInputCounter=0;initSensInputCounter<initLoopN;initSensInputCounter++)
@@ -203,16 +203,16 @@ void loop() {
     {
       result +=  pow(rmsArray[i],2);
     }
-    result /= sensLoopN;
-    result = sqrt(result);
-    result = result/4.44416;
-    result = 220*result;
-    if (initiated)
+    result /= sensLoopN; 
+    result = sqrt(result); //rms value
+    result = result/4.44416; //rms * 1024/5 * 0.0217. 0.0217 value is from WCS1600 document.
+    result = 220*result; //calculate value of watt
+    if (initiated) //when the Arduino is on first time, it collects value of watt to correct error
     {
       valueForCorrectionError = result;
       initiated = false;
     }
-    else if (!SSROn)
+    else if (!SSROn) //when the SSR is off, it collects values of watt to correct error
     {
       valueForCorrectionError += result;
       valueForCorrectionError /= 2.0;
