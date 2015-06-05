@@ -217,8 +217,8 @@ void loop() {
       valueForCorrectionError += result;
       valueForCorrectionError /= 2.0;
     } 
-    result -=  valueForCorrectionError;
-    if (result <10)
+    result -=  valueForCorrectionError; //correct error
+    if (result <10) //correct error
       result=0;
     
     Serial.print(result);
