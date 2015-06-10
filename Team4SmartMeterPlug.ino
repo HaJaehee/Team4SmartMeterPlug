@@ -3,6 +3,9 @@
 /*
   modified 11 May 2015
   by HJH
+  
+  modified 08 June 2015
+  by HJH
  */
 int SSRPin = 13;
 int WCSPin = A0;
@@ -74,7 +77,27 @@ void loop() {
 
   if (Serial.available())
   {
-      Serial.println(Serial.read());
+      int input = Serial.read()-'0';
+      if (input == 0)
+      {
+        digitalWrite(SSRPin, LOW);
+        SSROn = false;
+        lcd.setCursor(0,0);
+        lcd.print("SSR is off.");
+        //Serial.println("======SSR OFF======");
+        setInitA0ValueAvg();
+        ssrPower=0;
+        initiated=true;
+      }
+      else if(input == 1)
+      {
+        digitalWrite(SSRPin, HIGH);
+        SSROn = true;
+        lcd.setCursor(0,0);
+        lcd.print("SSR is on. ");
+        //Serial.println("======SSR ON======");
+        ssrPower=1;
+      }
   }
 /*
   for( int i = 0 ; i < 8 ; i++)
